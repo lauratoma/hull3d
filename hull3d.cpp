@@ -56,13 +56,36 @@ GLfloat gray[3] = {0.5, 0.5, 0.5};
 GLfloat yellow[3] = {1.0, 1.0, 0.0};
 GLfloat magenta[3] = {1.0, 0.0, 1.0};
 GLfloat cyan[3] = {0.0, 1.0, 1.0};
+// from
+// https://www.opengl.org/discussion_boards/showthread.php/132502-Color-tables
+//
+GLfloat brown[3] = { 0.647059, 0.164706, 0.164706}; 
+GLfloat DarkBrown[3] = { 0.36, 0.25, 0.20}; 
+GLfloat DarkTan[3] = { 0.59, 0.41, 0.31};
+GLfloat Maroon[3]= { 0.556863, 0.137255, 0.419608}; 
+GLfloat DarkWood[3] = { 0.52, 0.37, 0.26}; 
+
+GLfloat  Copper[3] = { 0.72,  0.45,  0.20};
+
+GLfloat green1[3] = {.5, 1, 0.5};
+GLfloat green2[3] = {0.0, .8, 0.0};
+GLfloat green3[3] = {0.0, .5, 0.0};
+GLfloat ForestGreen[3] = { 0.137255, 0.556863, 0.137255};
+GLfloat MediumForestGreen[3] = { 0.419608 , 0.556863 , 0.137255}; 
+GLfloat LimeGreen[3] ={ 0.196078,  0.8 , 0.196078}; 
+
+GLfloat Orange[3] = { 1, .5, 0}; 
+GLfloat Silver[3] = { 0.90, 0.91, 0.98};
+GLfloat Wheat[3] = { 0.847059 , 0.847059, 0.74902}; 
 
 
-//keep track of global translation and rotation 
+
+//whenever the user rotates and translates the scene, we update these
+//global translation and rotation
 GLfloat pos[3] = {0,0,0};
 GLfloat theta[3] = {0,0,0};
 
-//cube drawn line or filled 
+// draw polygons line or filled.  
 GLint fillmode = 0; 
 
 /* forward declarations of functions */
@@ -98,7 +121,8 @@ int main(int argc, char** argv) {
   hull = brute_force_hull(points); 
   //print_hull(hull);
 
-
+  
+  /* OPEN GL STUFF */
     /* open a window and initialize GLUT stuff */
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
@@ -113,6 +137,8 @@ int main(int argc, char** argv) {
   /* OpenGL init */
   /* set background color black*/
   glClearColor(0, 0, 0, 0);  
+  //when depth test is enabled, GL determines which objects are in
+  //front/behind and renders them correctly
   glEnable(GL_DEPTH_TEST); 
 
   /* setup the camera (i.e. the projection transformation) */ 
@@ -124,8 +150,6 @@ int main(int argc, char** argv) {
   //initialize the translation to bring the points in the view frustrum which is [-1, -10]
   pos[2] = -3;
 
-  //move it down, look at it from above 
-  //pos[1] = -1.3;
 
   /* start the event handler */
   glutMainLoop();
@@ -138,34 +162,34 @@ int main(int argc, char** argv) {
 
 /* this function is called whenever the window needs to be rendered */
 void display(void) {
-
+  
   //clear the screen
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+  
   //clear all modeling transformations 
   glMatrixMode(GL_MODELVIEW); 
   glLoadIdentity();
-
+  
   /* The default GL window is x=[-1,1], y= [-1,1] with the origin in
      the center.  The view frustrum was set up from z=-1 to z=-10. The
      camera is at (0,0,0) looking along negative z axis.
   */ 
-
- /* First we translate our local reference system. pos[] represents
-    the cumulative translation entered by the user, and theta[] the
-    rotation */
+  
+  /*  First we translate and rotate our local reference system with the
+      user transformation. pos[] represents the cumulative translation
+      entered by the user, and theta[] the cumulative rotation entered
+      by the user */
   glTranslatef(pos[0], pos[1], pos[2]);  
   glRotatef(theta[0], 1,0,0); //rotate theta[0] around x-axis, etc 
   glRotatef(theta[1], 0,1,0);
   glRotatef(theta[2], 0,0,1);
   
-  /* Now we draw the object in the local reference system. Note that
-     we draw the object in the local system, and we translate
-     the system. */
+  /* We translated the local reference system where we want it to be;
+     now we draw the objects in the local reference system.  */
   draw_points();  
   draw_hull(); 
   
-  //don't need to draw a cube but I found it cool for perspective 
+  //don't need to draw a cube but I found it nice for perspective 
   cube(1); 
 
 
@@ -182,7 +206,7 @@ void keypress(unsigned char key, int x, int y) {
   case 'i': 
     //re-initialize 
     initialize_points_random(); 
-    //re-compute
+    //re-compute th ehull
     hull = brute_force_hull(points); 
     glutPostRedisplay(); 
     break; 
@@ -292,7 +316,7 @@ void initialize_points_random() {
 
 
 
-/* x is a value in [0,WINDOWSIZE] is mapped to [-1,1] */
+/* x is a value in [0,WINDOWSIZE]: it is mapped to [-1,1] */
 GLfloat windowtoscreen(GLfloat x) {
   return (-1 + 2*x/WINDOWSIZE); 
 }
@@ -301,8 +325,8 @@ GLfloat windowtoscreen(GLfloat x) {
 
 
 /* ****************************** */
-/* Draw the array of points stored in global variable points[] each
-   point is drawn as a small square.  SHOULD BE A SPHERE/cube not a square
+/* Draw the array of points stored in global variable points[].  Each
+   point is drawn as a small cube.
 
    NOTE: The points are in the range x=[0, WINDOWSIZE], y=[0,
    WINDOWSIZE], z=[0, WINDOWSIZE] and they must be mapped back into x=[-1,1],
@@ -319,18 +343,22 @@ void draw_points(){
   
   int i;
   for (i=0; i < points.size(); i++) {
-    //draw a small filled cube centered at (points[i].x, points[i].y, points[i].z)
-    //save local coordinate system 
+    
+    //draw a small filled cube centered at (points[i].x, points[i].y,
+    //points[i].z)
+    
+    //first save local coordinate system 
     glPushMatrix(); 
-    //translate our local coordinate system to the point
+    //translate our local coordinate system to the point that we wan to draw
     glTranslatef(windowtoscreen(points[i].x),
 		 windowtoscreen(points[i].y), 
 		 windowtoscreen(points[i].z));
-    //draw the cube 
+    //now our origin is at the point: draw the cube 
     filledcube(.01); 
+    
     //move local system back to where we were
     glPopMatrix(); 
-  }
+  } //for 
 
 }//draw_points
 
@@ -338,11 +366,11 @@ void draw_points(){
 
 
 /* ****************************** */
-/* draw the list of points stored in global variable hull[]. 
+/* draw the list of points stored in global variable hull[].
 
    NOTE: the points are in the range x=[0, WINDOWSIZE], y=[0,
-   WINDOWSIZE], z=[0, 10] and they must be mapped back into x=[-1,1],
-   y=[-1, 1] */
+   WINDOWSIZE], z=[0, WINDOWSIZE] and they must be mapped back into
+   x=[-1,1], y=[-1, 1] */
 void draw_hull(){
   if (hull.size() >0) {
     int i; 
