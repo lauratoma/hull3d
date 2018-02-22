@@ -91,7 +91,9 @@ GLint fillmode = 0;
 /* forward declarations of functions */
 void display(void);
 void keypress(unsigned char key, int x, int y);
-void initialize_points_random(); 
+void initialize_points_random();
+void initialize_points_sphere();
+  
 void draw_points(); 
 void draw_hull(); 
 void draw_xy_rect(GLfloat z, GLfloat* col); 
@@ -115,7 +117,8 @@ int main(int argc, char** argv) {
   printf("you entered n=%d\n", n);
   assert(n>0); 
 
-  initialize_points_random();
+  // initialize_points_random();
+  initialize_points_sphere();
   // print_points();
 
   hull = brute_force_hull(points); 
@@ -311,6 +314,46 @@ void initialize_points_random() {
   }
 }
 
+
+
+/* initialize points on a sphere 
+   spherical coordinates: 
+   x = r sin PHI cos THETA
+   y = r sin PHI sin THETA 
+   z = r cos PHI
+   
+*/
+void initialize_points_sphere() {
+
+  //clear the vector just to be safe 
+  points.clear(); 
+
+  int m = sqrt(n); 
+  double phi, theta, incr = 2* M_PI / m; 
+  int rad = .4 * WINDOWSIZE; 
+
+  int i, j, x, y, z;
+  point3d p;
+  for (i=0; i<m; i++) {
+    phi = i*incr; 
+    for (j=0; j<m; j++) {
+      theta = j * incr;
+      
+      x = rad * sin(phi) * cos(theta);
+      y = rad * sin(phi) * sin(theta);
+      z = rad * cos(phi); 
+
+      p.x = x; p.y=y; p.z=z;
+      //all the points are in [-rad,rad]
+      //shift them to [0,2*rad]
+      p.x = (p.x+rad);
+      p.y = (p.y+ rad);
+      p.z = (p.z+ rad);
+      points.push_back(p); 
+    } //for j 
+  }//for i 
+  printf("done initializing points on sphere. total %d points\n", points.size());
+}
 
 
 
