@@ -25,6 +25,11 @@
 
 #include <vector>
 
+//to read the mesh from a file 
+#include <fstream>
+#include <iostream>
+#include <sstream>
+
 using namespace std; 
 
 
@@ -102,6 +107,37 @@ void draw_yz_rect(GLfloat x, GLfloat* col);
 void cube(GLfloat side); 
 void filledcube(GLfloat side); 
 void draw_axes(); 
+
+
+/* provided by Juan Atehortua and Lily Smith, fall 2021 */
+int initialize_points_from_mesh() {
+  points.clear();
+  string line;
+  ifstream mesh;
+  mesh.open("./meshes/spot/spot_control_mesh.obj", ios::in);
+  point3d new_point;
+  if (mesh.is_open()) {
+    while (getline(mesh, line)) {
+      if (line.substr(0, 2) == ("v ")){
+        istringstream v(line.substr(2));
+        double x, y, z;
+        v >> x;
+        v >> y;
+        v >> z;
+        new_point.x = ((int) 200 * x) + 0.5*WINDOWSIZE;
+        new_point.y = ((int) 200 * y) + 0.25*WINDOWSIZE;
+        new_point.z = ((int) 200 * z) + 0.5*WINDOWSIZE;
+        points.push_back(new_point);
+      }
+    }
+  }
+  else {
+    cerr << "Could not open file.\n";
+    return 0;
+  }
+  mesh.close();
+  return 1;
+}
 
 
 
@@ -186,12 +222,14 @@ void display(void) {
   glRotatef(theta[0], 1,0,0); //rotate theta[0] around x-axis, etc 
   glRotatef(theta[1], 0,1,0);
   glRotatef(theta[2], 0,0,1);
+   
+ 
   
   /* We translated the local reference system where we want it to be;
      now we draw the objects in the local reference system.  */
-  draw_points();  
+  draw_points();
   draw_hull(); 
-  
+ 
   //don't need to draw a cube but I found it nice for perspective 
   cube(1); 
 
@@ -210,9 +248,20 @@ void keypress(unsigned char key, int x, int y) {
     //re-initialize 
     initialize_points_random(); 
     //re-compute th ehull
-    hull = brute_force_hull(points); 
+    hull = brute_force_hull(points);
+    //hull = gift_wrapping_hull(points); 
     glutPostRedisplay(); 
     break; 
+
+    case 'm':
+    //re-initialize 
+    if (initialize_points_from_mesh()) {
+      //re-compute th ehull
+      hull = brute_force_hull(points); 
+      glutPostRedisplay(); 
+    }
+    break;
+
     
     //ROTATIONS 
   case 'x':
@@ -239,7 +288,8 @@ void keypress(unsigned char key, int x, int y) {
     theta[2] -= 5.0; 
     glutPostRedisplay();
     break;
-    
+
+ 
     //TRANSLATIONS 
     //backward (zoom out)
   case 'b':
@@ -397,7 +447,7 @@ void draw_points(){
 		 windowtoscreen(points[i].y), 
 		 windowtoscreen(points[i].z));
     //now our origin is at the point: draw the cube 
-    filledcube(.01); 
+    filledcube(.005); 
     
     //move local system back to where we were
     glPopMatrix(); 

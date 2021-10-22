@@ -12,7 +12,7 @@ using namespace std;
    if d is behind abc,  negative if d is in front (i.e. same side
    as the normal) of abc, and 0 if abcd are coplanar.
  */
-int signed_area3D(point3d a, point3d b, point3d c, point3d d) {
+int signed_volume(point3d a, point3d b, point3d c, point3d d) {
 
   return 0; 
 }
@@ -34,10 +34,29 @@ int infront (point3d a, point3d b, point3d c, point3d d) {
 
 
 /* compute and return the convex hull of the points */
-vector<triangle3d> brute_force_hull(vector<point3d> points) {
+vector<triangle3d> brute_force_hull(vector<point3d>& points) {
 
   vector<triangle3d> result; 
 
   return result; 
 }
 
+
+
+/* compute and return the convex hull of the points */
+vector<triangle3d> incremental_hull(vector<point3d>& points) {
+
+  vector<triangle3d> result; 
+
+  return result; 
+}
+
+
+
+/* compute and return the convex hull of the points */
+vector<triangle3d> giftwrapping_hull(vector<point3d>& points) {
+
+  vector<triangle3d> result; 
+
+  return result; 
+}
