@@ -144,6 +144,7 @@ int initialize_points_from_mesh() {
 
 int main(int argc, char** argv) {
 
+  printf("hello!");
   //read number of points from user
   if (argc!=2) {
     printf("usage: hull3d <nbPoints>\n");

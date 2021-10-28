@@ -13,7 +13,8 @@ CFLAGS+= -Wall
 
 ifeq ($(PLATFORM),Darwin)
 ## Mac OS X
-CFLAGS += -m64 -isystem/usr/local/include  -Wno-deprecated 
+INCLUDEPATH=-I/system/usr/local/include
+CFLAGS += -m64   -Wno-deprecated 
 LDFLAGS+= -m64 -lc -framework AGL -framework OpenGL -framework GLUT -framework Foundation
 else
 ## Linux
@@ -35,12 +36,12 @@ hull3d: hull3d.o geom.o
 	$(CC) -o $@ hull3d.o geom.o $(LDFLAGS)
 
 hull3d.o: hull3d.cpp  geom.h 
-	$(CC) -c $(INCLUDEPATH) $(CFLAGS)   hull3d.cpp  -o $@
+	$(CC) -c  $(CFLAGS)   hull3d.cpp  -o $@
 
 geom.o: geom.cpp geom.h 
-	$(CC) -c $(INCLUDEPATH)  $(CFLAGS)  geom.cpp -o $@
+	$(CC) -c   $(CFLAGS)  geom.cpp -o $@
 
-clean::	
+clean:	
 	rm *.o
 	rm hull3d
 
