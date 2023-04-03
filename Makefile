@@ -1,13 +1,11 @@
 PLATFORM = $(shell uname)
 
 
-## Compilation flags
-##comment out one or the other 
+## Compilation flags, comment out one or the other 
 ##debugging 
 CFLAGS = -g 
 ##release
-#CFLAGS = -O3 -DNDEBUG
-LDFLAGS=
+CFLAGS = -O3 -DNDEBUG
 
 CFLAGS+= -Wall
 
@@ -17,16 +15,14 @@ INCLUDEPATH=-I/system/usr/local/include
 CFLAGS += -m64   -Wno-deprecated 
 LDFLAGS+= -m64 -lc -framework AGL -framework OpenGL -framework GLUT -framework Foundation
 else
-## Linux
+## Linux, Windows 
 CFLAGS += -m64
 INCLUDEPATH  = -I/usr/include/GL/ 
 LIBPATH = -L/usr/lib64 -L/usr/X11R6/lib
 LDFLAGS+=  -lGL -lglut -lrt -lGLU -lX11 -lm  -lXmu -lXext -lXi
 endif
 
-
 CC = g++ -O3 -Wall $(INCLUDEPATH)
-
 
 PROGS = hull3d
 
