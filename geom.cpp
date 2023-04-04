@@ -7,56 +7,50 @@
 
 using namespace std; 
 
-
 /* returns 6 times the signed volume of abcd. The volume is positive
-   if d is behind abc,  negative if d is in front (i.e. same side
-   as the normal) of abc, and 0 if abcd are coplanar.
+   if d is behind abc (i.e. on opposite side as the normal); negative
+   if d is in front (i.e. same side as the normal) of abc, and 0 if
+   abcd are coplanar.
  */
-int signed_volume(point3d a, point3d b, point3d c, point3d d) {
+double signed_volume(point3d a, point3d b, point3d c, point3d d) {
 
   return 0; 
 }
 
 
-/* return 1 if points are on the same plane, and 0 otherwise */
-int coplanar(point3d a, point3d b, point3d c, point3d d) {
+/* return True if points are on the same plane, and False otherwise */
+bool  coplanar(point3d a, point3d b, point3d c, point3d d) {
 
   return 0; 
 }
 
 
-/* return 1 if d is  strictly in front of abc; 0 otherwise */
-int infront (point3d a, point3d b, point3d c, point3d d) {
+/* return True if d is  strictly in front of abc; False otherwise */
+bool  infront (point3d a, point3d b, point3d c, point3d d) {
 
   return 0; 
 }
 
 
 
-/* compute and return the convex hull of the points */
-vector<triangle3d> brute_force_hull(vector<point3d>& points) {
 
-  vector<triangle3d> result; 
-
-  return result; 
+/* compute the convex hull of the points */
+void naive_hull(vector<point3d>& points, vector<triangle3d>& hull) {
+  
+  //your code goes here 
 }
 
+/* compute the convex hull of the points */
+void incremental_hull(vector<point3d>& points, vector<triangle3d> & hull) {
+  
+  //your code goes here 
+} 
+
+/* compute the convex hull of the points */
+void giftwrapping_hull(vector<point3d>& points, vector<triangle3d>& hull) {
+  
+  //your code goes here 
+} 
 
 
-/* compute and return the convex hull of the points */
-vector<triangle3d> incremental_hull(vector<point3d>& points) {
 
-  vector<triangle3d> result; 
-
-  return result; 
-}
-
-
-
-/* compute and return the convex hull of the points */
-vector<triangle3d> giftwrapping_hull(vector<point3d>& points) {
-
-  vector<triangle3d> result; 
-
-  return result; 
-}
