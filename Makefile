@@ -5,9 +5,9 @@ PLATFORM = $(shell uname)
 ##debugging 
 CFLAGS = -g 
 ##release
-CFLAGS = -O3 -DNDEBUG
+##CFLAGS = -O3 -DNDEBUG
 
-CFLAGS+= -Wall
+CFLAGS+= -Wall -O3
 
 ifeq ($(PLATFORM),Darwin)
 ## Mac OS X

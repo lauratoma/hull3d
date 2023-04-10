@@ -1,15 +1,10 @@
 /* hull3d.cpp
 
-   What it does: Renders  a set of points in 3D allowing to
-   translate and rotate.
-
    This code is provided as a startup for your 3d hull.  Change it as
    needed to work with your project. 
-
    OpenGL 1.x
    Laura Toma
 */
-
 #include "geom.h"
 
 #include <stdlib.h>
@@ -35,6 +30,9 @@
 
 using namespace std; 
 
+// points have coordinates in range -RANGE..RANGE
+int  RANGE = 1000; 
+
 
 
 //pre-defined colors for convenience 
@@ -43,21 +41,15 @@ GLfloat green[3] = {0.0, 1.0, 0.0};
 GLfloat blue[3] = {0.0, 0.0, 1.0};
 GLfloat black[3] = {0.0, 0.0, 0.0};
 GLfloat white[3] = {1.0, 1.0, 1.0};
-GLfloat gray[3] = {0.5, 0.5, 0.5};
 GLfloat yellow[3] = {1.0, 1.0, 0.0};
-GLfloat magenta[3] = {1.0, 0.0, 1.0};
-GLfloat cyan[3] = {0.0, 1.0, 1.0};
-
-GLfloat darkmagenta[3] = { 0.5, 0.0, 0.5};
+GLfloat gray[3] = {0.5, 0.5, 0.5};
 GLfloat lightgrey[3] = { 0.8, 0.8, 0.8};
 GLfloat darkgrey[3] = { 0.6, 0.6, 0.6};
+GLfloat magenta[3] = {1.0, 0.0, 1.0};
+GLfloat darkmagenta[3] = { 0.5, 0.0, 0.5};
+GLfloat cyan[3] = {0.0, 1.0, 1.0};
 GLfloat darkcyan[3] = { 0.0, 0.4, 0.4};
 GLfloat lightcyan[3] = { 0.0, 0.6, 0.6};
-GLfloat LimeGreen[3] ={ 0.196078,  0.8 , 0.196078}; 
-GLfloat Orange[3] = { 1, .5, 0}; 
-GLfloat Silver[3] = { 0.90, 0.91, 0.98};
-GLfloat Wheat[3] = { 0.847059 , 0.847059, 0.74902}; 
-
 
 
 
@@ -66,32 +58,38 @@ GLfloat Wheat[3] = { 0.847059 , 0.847059, 0.74902};
 /* global variables */
 /********************************************************************/
 
+
+
 int n;  //desired number of points
 
-//the vector  of n points;
-//note: needs to be global in order to be rendered
+//the vector  of n points; note: needs to be global in order to be rendered
 vector<point3d>  points;
 
-//the convex hull
-//note: needs to be global in order to be  rendered
+//the convex hull. note: needs to be global in order to be  rendered
 vector<triangle3d>  hull; 
 
 
 ///window size for the graphics window
 const int WINDOWSIZE = 500; 
 
-
-//global translation matrix
-//updated when the user translates the scene 
+//global translation matrix. updated when the user translates the scene 
 GLfloat pos[3] = {0,0,0};
 
-//global rotation matrix
-//updated when the user translates the scene 
+//global rotation matrix. updated when the user translates the scene 
 GLfloat theta[3] = {0,0,0};
 
+// draw polygons line or filled.  
+bool fill_mode = 0; 
 
-// render mode: draw polygons line or filled.  
-GLint fillmode = 0; 
+//render the hull one face at a time, continuously 
+bool animate_mode = false; 
+
+//used by animate 
+int hull_index_render = 0;
+
+
+
+
 
 
 
@@ -104,22 +102,24 @@ GLint fillmode = 0;
 
 void display(void);
 void keypress(unsigned char key, int x, int y);
+void idlefunc();
 
-//initializers
-void initialize_points_random(vector<point3d>& points, int n);
-void initialize_points_sphere(vector<point3d>& points, int n, double rad);
+// generate n random points with int coords in -RANGE..RANGE
+void initialize_points_random_RANGE(vector<point3d>& points, int n);
+// generate n  points on a sphere  with int coords in -RANGE..RANGE
+void initialize_points_sphere_RANGE(vector<point3d>& points, int n, double rad);
+// initialize n points from a mesh 
 int initialize_points_from_mesh(vector<point3d>& pts, char* fpath); 
+
 				
 //print label, then the vector 
-void print_vector(const char* label, vector<point3d> p);
+void print_points(const char* label, vector<point3d> p);
 
-/* render the points; each point is drawn as a small square.  */
+// render the points; each point is drawn as a small square. 
 void draw_points(vector<point3d> pts);
 
-/* render the hull. note: for each triangle, the points are expected to
-   be in ccw boundary order. 
-*/
-void draw_hull(vector<triangle3d> hull);
+// render the hull 
+void draw_hull(vector<triangle3d>& hull);
 
 
 //various helper functions 
@@ -129,9 +129,6 @@ void draw_yz_rect(GLfloat x, GLfloat* col);
 void cube(GLfloat side); 
 void filledcube(GLfloat side); 
 void draw_axes(); 
-
-//you'll add more
-
 
 
 
@@ -150,12 +147,12 @@ int main(int argc, char** argv) {
   assert(n>0); 
 
   //populate the points 
-  initialize_points_random(points, n);
-  //initialize_points_sphere(points, n, .8);
-  //print_vector("points:", points);
+  initialize_points_random_RANGE(points, n);
+  //print_points("points:", points);
 
   //compute the hull 
-  naive_hull(points, hull); 
+  naive_hull(points, hull);
+  //gift_wrapping_hull(points, hull); 
   //print_hull(hull);
 
   
@@ -170,7 +167,8 @@ int main(int argc, char** argv) {
   /* register callback functions */
   glutDisplayFunc(display); 
   glutKeyboardFunc(keypress);
-  
+  glutIdleFunc(idlefunc);
+   
   /* GL init */
   /* set background color black*/
   glClearColor(0, 0, 0, 0);  
@@ -199,6 +197,7 @@ int main(int argc, char** argv) {
 
 
 
+
 /* ************************************************************ */
 /* This is the function that renders the window. We registered this
    function as the "displayFunc". It will be called by GL everytime
@@ -213,7 +212,6 @@ void display(void) {
      the center.  The view frustrum was set up from z=-1 to z=-10. The
      camera is at (0,0,0) looking along negative z axis.
   */
-
   
   //clear all modeling transformations
   glMatrixMode(GL_MODELVIEW); 
@@ -228,13 +226,13 @@ void display(void) {
   glRotatef(theta[1], 0,1,0);
   glRotatef(theta[2], 0,0,1);
    
-
-  // now we draw the objects in the local reference system. 
-  
-  //don't need to draw a cube but nice for perspective 
+  //draw a cube, nice for perspective 
   cube(1); 
 
-  // The points are in the range [-1, 1]
+  //our points are in the range [-RANGE, RANGE], scale them to screen coords [-1, 1]
+  float s = 1/(float)RANGE; 
+  glScalef(s, s, s);
+
   draw_points(points);
   draw_hull(hull); 
   
@@ -242,6 +240,12 @@ void display(void) {
   glFlush();
 }
 
+
+/* this is the function we registered as idleFunc. It's called every
+   frame or so.  */
+void idlefunc() {
+  //printf("hi"); 
+}
 
 
 /* ************************************************************ */
@@ -254,7 +258,7 @@ void keypress(unsigned char key, int x, int y) {
     
   case 'i': 
     //re-initialize  RANDOM
-    initialize_points_random(points, n); 
+    initialize_points_random_RANGE(points, n); 
     //re-compute the hull
     naive_hull(points, hull);
     //gift_wrapping_hull(points, hull); 
@@ -263,7 +267,7 @@ void keypress(unsigned char key, int x, int y) {
     
   case 's': 
     //re-initialize SPHERE 
-    initialize_points_sphere(points, n, .8); 
+    initialize_points_sphere_RANGE(points, n, .8); 
     //re-compute the hull
     naive_hull(points, hull);
     //gift_wrapping_hull(points, hull); 
@@ -280,13 +284,16 @@ void keypress(unsigned char key, int x, int y) {
     }
     break;
     
-    
   case 'c': 
     //fillmode
-    fillmode = !fillmode; 
+    fill_mode = !fill_mode; 
     glutPostRedisplay();
     break;
     
+  case 'a': //animate 
+    animate_mode = !animate_mode;
+    glutPostRedisplay();
+    break;
     
     //ROTATIONS
   case 'x':
@@ -315,40 +322,32 @@ void keypress(unsigned char key, int x, int y) {
     break;
 
     //TRANSLATIONS 
-    //backward (zoom out)
-  case 'b':
+case 'b': //backward (zoom out)
     pos[2] -= 0.1; 
     glutPostRedisplay();
     break;
     //forward (zoom in)
-  case 'f':
+  case 'f': //forward (zoom in) 
     pos[2] += 0.1; 
-    //glTranslatef(0,0, 0.5);
     glutPostRedisplay();
     break;
-    //down 
-  case 'd': 
-     pos[1] -= 0.1; 
-    //glTranslatef(0,0.5,0);
+  case 'd':      //down 
+    pos[1] -= 0.1; 
     glutPostRedisplay();
     break;
     //up
-  case 'u': 
+  case 'u':  //up
     pos[1] += 0.1; 
-    //glTranslatef(0,-0.5,0);
     glutPostRedisplay();
     break;
-    //left 
-  case 'l':
+  case 'l': //left 
     pos[0] -= 0.1; 
     glutPostRedisplay();
     break;
-    //right
-  case 'r':
+  case 'r': //right 
     pos[0] += 0.1; 
     glutPostRedisplay();
     break;
-
 
   case '0':
     //reset all transformations (back to original position)
@@ -369,46 +368,39 @@ void keypress(unsigned char key, int x, int y) {
 
 
 
-
-
-
 /* ************************************************************** */
-/* populate the vector  with n random points in the range [-1, 1] 
+/* populate the vector with n random points with int coords in the
+   range [-RANGE, RANGE]
  */
-void initialize_points_random(vector<point3d>& points, int n) {
-  
+void initialize_points_random_RANGE(vector<point3d>& points, int n) {
   printf("initialize points random\n"); 
   //clear the vector just to be safe 
   points.clear(); 
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<> dist(-.8, .8);
+  srand((unsigned)time(0)); 
+      
   point3d p;
   for (int i=0; i<n; i++) {
-    p.x = dist(gen); 
-    p.y =  dist(gen);
-    p.z=  dist(gen);
-    //cout << p.x << ","<< p.y << "," <<  p.z << endl; 
+    p.x = (int) rand()% RANGE  - (RANGE/2); 
+    p.y = (int) rand()% RANGE  - (RANGE/2); 
+    p.z = (int) rand()% RANGE  - (RANGE/2); 
+    //cout << "point: " << p.x << ","<< p.y << "," <<  p.z << endl; 
     points.push_back(p); 
   }
 }
 
 
 
-/* ************************************************************** */
-/* initialize n random points on a sphere of radius rad
 
-   spherical coordinates: 
-   x = r sin PHI cos THETA
-   y = r sin PHI sin THETA 
-   z = r cos PHI
-*/
-void initialize_points_sphere(vector<point3d>& points, int n, double rad) {
+/* ************************************************************** */
+/* populate the vector with n points on a sphere with int coords in
+   the range [-RANGE, RANGE]
+ */
+void initialize_points_sphere_RANGE(vector<point3d>& points, int n, double rad) {
 
   printf("initialize points sphere\n"); 
   //clear the vector just to be safe 
-  points.clear(); 
+  points.clear();
 
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -416,15 +408,31 @@ void initialize_points_sphere(vector<point3d>& points, int n, double rad) {
   
   double phi, theta;
   point3d p;
-  for (int i=0; i<n; i++) {
+  for (int i=0; i<n/2; i++) {
     phi = dist(gen); 
     theta = dist(gen);
-    p.x = rad * sin(phi) * cos(theta);
-    p.y = rad * sin(phi) * sin(theta);
-    p.z = rad * cos(phi); 
+    p.x = RANGE * rad *sin(phi) * cos(theta);
+    p.y = RANGE*rad * sin(phi) * sin(theta);
+    p.z = RANGE*rad * cos(phi); 
+    //cout << p.x << ","<< p.y << "," <<  p.z << endl; 
+    points.push_back(p); 
+  }
+
+  //let's add a second smaller sphere inside first one
+  rad = rad/2; 
+  for (int i=0; i<n/2; i++) {
+    phi = dist(gen); 
+    theta = dist(gen);
+    p.x = RANGE * rad *sin(phi) * cos(theta);
+    p.y = RANGE*rad * sin(phi) * sin(theta);
+    p.z = RANGE*rad * cos(phi); 
+    //cout << p.x << ","<< p.y << "," <<  p.z << endl; 
     points.push_back(p); 
   }
 }
+
+
+
 
 
 
@@ -447,6 +455,9 @@ int initialize_points_from_mesh(vector<point3d>& pts, char* fpath) {
         v >> point.x;
         v >> point.y;
         v >> point.z;
+	point.x *= RANGE;
+	point.y *= RANGE;
+	point.z *= RANGE;
         pts.push_back(point);
       }//if
     }//while 
@@ -480,7 +491,7 @@ int initialize_points_from_mesh(vector<point3d>& pts, char* fpath) {
     //translate our local coordinate system to the point that we want to draw
     glTranslatef(points[i].x, points[i].y, points[i].z);
     //draw the cube 
-    filledcube(.005); 
+    filledcube(5); 
     //go  back to where we were
     glPopMatrix(); 
   } //for 
@@ -489,20 +500,38 @@ int initialize_points_from_mesh(vector<point3d>& pts, char* fpath) {
   
   
   
-  /* ********************************************************* */
-  // draw the faces of the hull.
-  void draw_hull(vector<triangle3d> hull){
-
-    if (hull.size() == 0) return;
-    for (int i=0; i< hull.size()-1; i++) {
-      
-      //draw the triangle
-      
-    }
-  }//draw-hull 
 
 
 
+/* ********************************************************* */
+// draw the faces of the hull.
+void draw_hull(vector<triangle3d>& hull){
+  
+  //if there is no hull, skip rendering 
+  if (hull.size() == 0) return;
+  
+  //set the fill mode 
+  if (fill_mode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  else  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  
+  //N represents how many faces to render 
+  int N = (animate_mode)? hull_index_render: hull.size();
+  
+  for (int i=0; i< N; i++) {
+    
+    //set color of this face
+    GLfloat color[3]; 
+    for (int x=0; x<3; x++) color[x] = (GLfloat)hull[i].color[x];
+    glColor3fv(color); 
+    
+    //draw the triangle
+    glBegin(GL_TRIANGLES);
+    glVertex3f(hull[i].a->x, hull[i].a->y,hull[i].a->z);
+    glVertex3f(hull[i].b->x, hull[i].b->y,hull[i].b->z);
+    glVertex3f(hull[i].c->x, hull[i].c->y,hull[i].c->z);
+    glEnd();
+  }//for 
+}//draw-hull 
 
 
 
@@ -519,7 +548,6 @@ void draw_xy_rect(GLfloat z, GLfloat side, GLfloat* color) {
   glEnd();
 }
 
-
 //draw a square y=[-side,side] x z=[-side,side] at given x
 void draw_yz_rect(GLfloat x, GLfloat side, GLfloat* color) {
   
@@ -531,7 +559,6 @@ void draw_yz_rect(GLfloat x, GLfloat side, GLfloat* color) {
   glVertex3f(x,-side, -side);
   glEnd();
 }
-
 
 //draw a square x=[-side,side] x z=[-side,side] at given y
 void draw_xz_rect(GLfloat y, GLfloat side, GLfloat* color) {
@@ -545,38 +572,27 @@ void draw_xz_rect(GLfloat y, GLfloat side, GLfloat* color) {
   glEnd();
 }
 
-
-
-
 //draw a cube with middle planes 
 void cube(GLfloat side) {
   GLfloat f = side, b = -side;
+
+  if (fill_mode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  else  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
  
-  if (fillmode) {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-  } else {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-  }
-
-
-  /* back face  BLUE*/
+  /* back face*/
   draw_xy_rect(b,side, lightcyan);
- /* front face  RED*/
-  //draw_xy_rect(f,side, red);
-  /* side faces  GREEN*/
+   /* side faces */
   draw_yz_rect(b, side, darkcyan);
   draw_yz_rect(f, side, darkcyan);
-  //up, down faces missing to be able to see inside 
+  //front, up, down faces missing to be able to see inside 
 
-  /* middle z=0 face CYAN*/
+  /* middle z=0 face */
   draw_xy_rect(0, side, lightgrey);
-  /* middle x=0 face WHITE*/
+  /* middle x=0 face */
   draw_yz_rect(0,side, darkgrey);
-  /* middle y=0 face  pink*/
+  /* middle y=0 face  */
   draw_xz_rect(0, side, darkmagenta);
 }
-
-
 
 //draw a filled cube [-side,side]^3
 void filledcube(GLfloat side) {
@@ -594,19 +610,5 @@ void filledcube(GLfloat side) {
   /* up, down  faces  */
   draw_xz_rect(side,side, yellow);
   draw_xz_rect(-side,side, yellow);
-}
-
-
-  
-
-/* ****************************** */
-/* print the vector of points */
-void print_vector(const char* label, vector<point3d> points) {
-  
-  printf("%s ", label);
-  for (int i=0; i< points.size(); i++) {
-    printf("[%.1f,%.1f, %.1f] ", points[i].x, points[i].y, points[i].x);
-  }
-  printf("\n");
 }
 
