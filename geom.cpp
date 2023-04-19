@@ -298,7 +298,6 @@ void orient_triangle(triangle3d *t, vector<point3d>& points) {
 
 
 /* ************************************************************ */
-/* finds and returns a face on the hull3d */
 triangle3d find_first_face(vector<point3d>& points) {
   
   edge3d e = find_first_edge_on_hull(points);

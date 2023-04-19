@@ -109,7 +109,7 @@ void initialize_points_random_RANGE(vector<point3d>& points, int n);
 // generate n  points on a sphere  with int coords in -RANGE..RANGE
 void initialize_points_sphere_RANGE(vector<point3d>& points, int n, double rad);
 // initialize n points from a mesh 
-int initialize_points_from_mesh(vector<point3d>& pts, char* fpath); 
+int initialize_points_from_mesh(vector<point3d>& pts, const char* fpath); 
 
 				
 //print label, then the vector 
