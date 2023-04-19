@@ -436,10 +436,9 @@ void initialize_points_sphere_RANGE(vector<point3d>& points, int n, double rad) 
 
 
 
-
 /* ************************************************************ */
 /* credit: Juan Atehortua and Lily Smith, fall 2021 */
-int initialize_points_from_mesh(vector<point3d>& pts, char* fpath) {
+int initialize_points_from_mesh(vector<point3d>& pts, const char* fpath) {
   printf("initialize points mesh\n"); 
   pts.clear();
   
@@ -448,23 +447,28 @@ int initialize_points_from_mesh(vector<point3d>& pts, char* fpath) {
   //mesh.open("./meshes/spot/spot_control_mesh.obj", ios::in);
   mesh.open(fpath, ios::in);
   point3d point;
-  if (mesh.is_open()) {
-    while (getline(mesh, line)) {
-      if (line.substr(0, 2) == ("v ")){
-        istringstream v(line.substr(2));
-        v >> point.x;
-        v >> point.y;
-        v >> point.z;
-	point.x *= RANGE;
-	point.y *= RANGE;
-	point.z *= RANGE;
-        pts.push_back(point);
-      }//if
-    }//while 
-  } else {
+  if (!mesh.is_open()) {
     cerr << "Could not open file.\n";
     return 0;
   }
+  //else
+  double x, y, z; 
+  while (getline(mesh, line)) {
+    if (line.substr(0, 2) == ("v ")){
+      istringstream v(line.substr(2));
+      v >> x;
+      v >> y;
+      v >> z;
+      printf("[%f, %f, %f] ", x, y, z); 
+      point.x = (int) RANGE*x;
+      point.y = (int) RANGE*y;
+      point.z = (int) RANGE*z;
+      
+      printf("[%d, %d, %d] \n", point.x, point.y, point.z); 
+      pts.push_back(point);
+    }//if
+  }//while 
+  
   mesh.close();
   return 1;
 }
